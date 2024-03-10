@@ -4,10 +4,16 @@
   "type": "module",
   "devDependencies": {
     "@types/bun": "latest",
+    "@types/eslint__js": "^8.42.3",
+    "@types/pako": "^2.0.3",
+    "buffer": "^5.5.0||^6.0.0",
     "daisyui": "^4.7.2",
+    "eslint": "^8.57.0",
     "parcel": "^2.12.0",
     "pm2": "^5.3.1",
-    "tailwindcss": "^3.4.1"
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5.4.2",
+    "typescript-eslint": "^7.1.1"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
@@ -15,7 +21,8 @@
   "dependencies": {
     "@monaco-editor/loader": "^1.4.0",
     "htmx.org": "^1.9.10",
-    "theme-change": "^2.5.0",
+    "js-base64": "^3.7.7",
+    "pako": "^2.1.0",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.1/xlsx-0.20.1.tgz"
   }
 }

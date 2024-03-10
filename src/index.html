@@ -21,13 +21,15 @@
                         <div id="editor" class="size-full"></div>
                     </div>
                     <div class="flex-auto basis-1/6 flex flex-col gap-1">
-                        <div id="drop_preview" class="size-full p-1 border-2 border-dashed rounded flex-auto basis-1/4">
+                        <div id="drop_preview" class="p-1 border-2 border-dashed rounded flex-auto basis-1/6">
                             <div id="drop-file" class="relative size-full">
-                                <div id="drop-file-indicator" class="absolute text-wrap truncate text-sm absolute-center">Drop file here</div>
-                                <input id="input-file" type="file" class="absolute size-full opacity-0 cursor-pointer" />
+                                <input id="input-file" type="file" class="absolute size-full opacity-0 z-10 cursor-pointer" />
+                                <div id="drop-file-indicator" class="size-full text-wrap text-sm grid place-content-center">
+                                    Drop file here
+                                </div>
                             </div>
                         </div>
-                        <div class="flex-auto basis-3/4 flex flex-wrap gap-1">
+                        <div class="flex-initial basis-5/6 flex flex-wrap gap-1">
                             <button id="btn-execute" class="flex-initial basis-4 btn btn-sm btn-outline rounded">Execute</button>
                             <button id="btn-preview" class="flex-initial basis-4 btn btn-sm btn-outline rounded">Preview</button>
                             <button id="btn-export" class="flex-initial basis-4 btn btn-sm btn-outline rounded">Export</button>
@@ -45,7 +47,7 @@
                     <div class="absolute p-3  size-full absolute-center rounded">
                         <div class="flex flex-col p-3 size-full bg-base-200 rounded">
                             <div class="flex-auto basis-1/12 text-xl font-semibold">
-                                Only preview the first work sheet
+                                Currently only support previewing the first work sheet
                             </div>
                             <div id="preview-table-container" class="flex-auto basis-11/12 text-nowrap overflow-scroll"></div>
                         </div>

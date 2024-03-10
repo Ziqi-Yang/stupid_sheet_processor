@@ -1,7 +1,7 @@
 npx := env("npx", "bun")
 
 start: kill tailwind-watch-pm2 parcel-pm2
-    xdg-open http://localhost:1234
+    # xdg-open http://localhost:1234
     
 # tailwind watch (managed by pm2)
 tailwind-watch-pm2:
@@ -33,6 +33,10 @@ logs:
 # kill all pm2 background applications
 kill:
     {{npx}} pm2 kill
+
+# eslint
+eslint:
+    {{npx}} eslint .
 
 # clean
 clean: parcel-clean-build

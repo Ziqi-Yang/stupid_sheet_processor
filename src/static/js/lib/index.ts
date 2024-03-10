@@ -1,20 +1,21 @@
-export function debounce(func: Function, wait: number) {
-  let timeout: number | undefined;
+export function debounce(func: () => void, wait: number) {
+  let timeout_id: number | undefined;
 
-  return function executedFunction(...args: any) {
+  return function executedFunction() {
     const later = () => {
-      clearTimeout(timeout);
-      func(...args);
+      clearTimeout(timeout_id);
+      func();
     };
 
-    clearTimeout(timeout);
-    timeout = window.setTimeout(later, wait);
+    clearTimeout(timeout_id);
+    timeout_id = window.setTimeout(later, wait);
   };
 }
 
-export function generateElements(html: string) {
+export function generateElements(html: string): HTMLCollection {
   const template = document.createElement('template');
   template.innerHTML = html.trim();
   return template.content.children;
 }
+
 

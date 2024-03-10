@@ -1,11 +1,13 @@
 import readFile from './lib/macros.ts' with {type: 'macro'};
 import {debounce, generateElements} from './lib/index.ts';
+import State from './lib/state.ts';
 import * as XLSX from 'xlsx';
 import loader, {type Monaco} from '@monaco-editor/loader';
 import { editor as EDITOR } from 'monaco-editor';
 
 const XLSX_TYPE_DEFINITION = readFile("./node_modules/xlsx/types/index.d.ts");
-const CACHE_FILE_NAME = "EDITOR_CONTENT";
+const TEMPLATE = readFile("./src/static/js/templates.js");
+const CACHE_KEY_EDITOR_CONTENT = "EDITOR_CONTENT";
 
 var editor: EDITOR.IStandaloneCodeEditor;
 
@@ -17,17 +19,35 @@ function ready(fn: () => void) {
   }
 }
 
+function getPakoStringFromURL(): string | null {
+  const urlParams = new URLSearchParams(window.location.search);
+  return urlParams.get('pako');
+}
+
 // sync editor content to cache (if too frequent (less than 1s), then do nothing)
-const debounced_update_local_storage = debounce(() => {
-  let content = editor.getValue();
-  localStorage.setItem(CACHE_FILE_NAME, content);
+const update_state_code = debounce(() => {
+  let code = editor.getValue();
+  if (window.ssp_state) {
+    window.ssp_state.code = code;
+    window.ssp_state.save_state();
+  } else {
+    console.error("Couldn't save state, since it is not initialized!");
+  }
 }, 1000);
 
 async function initialize_editor() {
+  let code = TEMPLATE;
+  let url_code = window.ssp_state?.code;
+  if (url_code && url_code != '') {
+    code = url_code;
+  } else {
+    let cached_code = localStorage.getItem(CACHE_KEY_EDITOR_CONTENT);
+    if (cached_code && cached_code != '') code = cached_code;
+  }
+  
   loader.init().then(monaco => {
-    let cached_content = localStorage.getItem(CACHE_FILE_NAME);
     editor = monaco.editor.create(document.querySelector("#editor")!, {
-      value: cached_content || '',
+      value: code,
       language: 'javascript',
       minimap: { enabled: false },
     });
@@ -35,23 +55,23 @@ async function initialize_editor() {
     // make a container for those functions
     var libSource = `
     declare module XLSX { ${XLSX_TYPE_DEFINITION} };
-    let workbook = XLSX.WorkBook;`; 
+    let workbook: XLSX.WorkBook = XLSX.WorkBook;
+    let res_workbook: XLSX.WorkBook = XLSX.WorkBook;`; 
     // var libSource = XLSX_TYPE_DEFINITION.replace(/export /g, ""); // directly expose functions
     monaco.languages.typescript.javascriptDefaults.addExtraLib(libSource);
-
     
     editor.onDidChangeModelContent(_e => {
-      debounced_update_local_storage();
+      update_state_code();
     });
   });
 }
 
-function render_preview_html_table() {
+async function render_preview_html_table() {
   let preview_table_container = document.getElementById('preview-table-container')!;
-  const ws = window.workbook.Sheets[window.workbook.SheetNames[0]];
+  const { decode_range } = XLSX.utils;
+  const ws = window.workbook!.Sheets[window.workbook!.SheetNames[0]];
   let data = ws["!data"];
   if (data == null) return;
-  const { decode_range } = XLSX.utils;
   let raw_range = ws["!ref"];
   if (raw_range == null) return;
   let range = decode_range(raw_range);
@@ -110,6 +130,11 @@ function toggle_sheet_preview() {
   }
 }
 
+function export_sheet() {
+  if (!window.res_workbook) return;
+  XLSX.writeFile(window.res_workbook, "res_workbook.xlsx", { compression: true });
+}
+
 function process() {
   let content = editor.getValue();
   eval(content)
@@ -118,16 +143,40 @@ function process() {
 async function bind_button_events() {
   let execute_btn = document.getElementById("btn-execute");
   let preview_btn = document.getElementById("btn-preview");
-  let preview_panel_close_preview_button = document.getElementById("preview-panel-close-preview-button");
+  let preview_panel_close_preview_btn = document.getElementById("preview-panel-close-preview-button");
+  let export_btn = document.getElementById("btn-export");
   execute_btn?.addEventListener("click", process);
   preview_btn?.addEventListener("click", toggle_sheet_preview);
-  preview_panel_close_preview_button?.addEventListener("click", toggle_sheet_preview);
+  preview_panel_close_preview_btn?.addEventListener("click", toggle_sheet_preview);
+  export_btn?.addEventListener("click", export_sheet);
+}
+
+/**
+ * restore state from url or local storage
+ * if no state is found, then create a brand new state.
+ */
+function restore_state() {
+  const raw_state = getPakoStringFromURL();
+  if (raw_state) {
+    window.ssp_state = State.decode_pako(raw_state);
+  } else {
+    let state = State.retrieve_state();
+    if (state) {
+      window.ssp_state = state;
+    } else {
+      window.ssp_state = new State("");
+    }
+  }
 }
 
 (function() {
   ready(() => {
+    window.ssp_state = null;
+    window.workbook = null;
+    window.res_workbook = null;
     window.XLSX = XLSX;
     
+    restore_state();
     initailize_xlsx();
     initialize_editor();
     bind_button_events();
