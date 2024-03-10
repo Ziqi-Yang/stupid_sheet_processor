@@ -1,61 +1,73 @@
 <!doctype html>
 <html class="h-screen w-screen">
-    <head>
-        <title>Stupid Sheet Processor</title>
-        <meta charset="utf-8" />
-        <link rel="stylesheet" href="./static/css/main.css">
-        <script type="module" src="./static/js/htmx.ts"></script>
-        <script type="module" src="./static/js/main.ts"></script>
-    </head>
-    <body class="size-full">
-        <div class="size-full flex flex-col">
-            <div class="navbar bg-base-200">
-                <div class="flex-1">
-	                  <button hx-get="./home.html" class="btn btn-ghost text-2xl" role="tab" aria-label="Home">Stupid Sheet Processor</button>
-                </div>
-            </div>
+  <head>
+    <title>Stupid Sheet Processor</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="./static/css/main.css">
+    <script type="module" src="./static/js/htmx.ts"></script>
+    <script type="module" src="./static/js/main.ts"></script>
+  </head>
+  <dialog id="dialog" class="modal modal-bottom sm:modal-middle">
+    <div class="modal-box">
+      <h3 id="dialog-title" class="font-bold text-lg">Title</h3>
+      <p id="dialog-content" class="py-4">Content</p>
+      <div class="modal-action">
+        <form method="dialog">
+          <button id="dialog-close-btn" class="btn">Close</button>
+        </form>
+      </div>
+    </div>
+  </dialog>
+  <body class="size-full">
+    <div class="size-full flex flex-col">
+      <div class="navbar bg-base-200">
+        <div class="flex-1">
+	        <button hx-get="./home.html" class="btn btn-ghost text-2xl" role="tab" aria-label="Home">Stupid Sheet Processor</button>
+        </div>
+      </div>
 
-            <div role="tabpanel" class="p-2 size-full">
-                <div id="main" class="flex size-full gap-2">
-                    <div class="flex-auto basis-5/6">
-                        <div id="editor" class="size-full"></div>
-                    </div>
-                    <div class="flex-auto basis-1/6 flex flex-col gap-1">
-                        <div id="drop_preview" class="p-1 border-2 border-dashed rounded flex-auto basis-1/6">
-                            <div id="drop-file" class="relative size-full">
-                                <input id="input-file" type="file" class="absolute size-full opacity-0 z-10 cursor-pointer" />
-                                <div id="drop-file-indicator" class="size-full text-wrap text-sm grid place-content-center">
-                                    Drop file here
-                                </div>
-                            </div>
-                        </div>
-                        <div class="flex-initial basis-5/6 flex flex-wrap content-start gap-1">
-                            <button id="btn-execute" class="flex-initial basis-4 btn btn-sm btn-outline rounded">Execute</button>
-                            <button id="btn-preview" class="flex-initial basis-4 btn btn-sm btn-outline rounded">Preview</button>
-                            <button id="btn-export" class="flex-initial basis-4 btn btn-sm btn-outline rounded">Export</button>
-                            <button id="btn-share" class="flex-initial basis-4 btn btn-sm btn-outline rounded">Share</button>
-                        </div>
-                    </div>
+      <div role="tabpanel" class="p-2 size-full">
+        <div id="main" class="flex size-full gap-2">
+          <div class="flex-auto basis-5/6">
+            <div id="editor" class="size-full"></div>
+          </div>
+          <div class="flex-auto basis-1/6 flex flex-col gap-1">
+            <div id="drop_preview" class="p-1 border-2 border-dashed rounded flex-auto basis-1/6">
+              <div id="drop-file" class="relative size-full">
+                <input id="input-file" type="file" class="absolute size-full opacity-0 z-10 cursor-pointer" />
+                <div id="drop-file-indicator" class="size-full text-wrap text-sm grid place-content-center">
+                  Drop file here
                 </div>
+              </div>
             </div>
+            <div class="flex-initial basis-5/6 flex flex-wrap content-start gap-1">
+              <button id="btn-execute" class="flex-initial basis-4 btn btn-sm btn-outline rounded">Execute</button>
+              <button id="btn-preview" class="flex-initial basis-4 btn btn-sm btn-outline rounded">Preview</button>
+              <button id="btn-export" class="flex-initial basis-4 btn btn-sm btn-outline rounded">Export</button>
+              <button id="btn-share" class="flex-initial basis-4 btn btn-sm btn-outline rounded">Share</button>
+              <button id="btn-reset" class="flex-initial basis-4 btn btn-sm btn-outline rounded">Reset</button>
+            </div>
+          </div>
         </div>
-        <div id="preview-panel" class="hidden fixed z-10 size-full backdrop-blur top-0 left-0 right-0">
-            <div class="flex flex-col size-full">
-                <div class="flex-auto basis-1/12 flex flex-row-reverse p-2">
-                    <button id="preview-panel-close-preview-button" class="btn btn-sm btn-outline rounded">Close</button>
-                </div>
-                <div class="flex-auto basis-11/12 relative">
-                    <div class="absolute p-3  size-full absolute-center rounded">
-                        <div class="flex flex-col p-3 size-full bg-base-200 rounded">
-                            <div class="flex-auto basis-1/12 text-xl font-semibold">
-                                Currently only support previewing the first work sheet
-                            </div>
-                            <div id="preview-table-container" class="flex-auto basis-11/12 text-nowrap overflow-scroll"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            </div>
+      </div>
+    </div>
+    <div id="preview-panel" class="hidden fixed z-10 size-full backdrop-blur top-0 left-0 right-0">
+      <div class="flex flex-col size-full">
+        <div class="flex-auto basis-1/12 flex flex-row-reverse p-2">
+          <button id="preview-panel-close-preview-button" class="btn btn-sm btn-outline rounded">Close</button>
         </div>
-    </body>
+        <div class="flex-auto basis-11/12 relative">
+          <div class="absolute p-3  size-full absolute-center rounded">
+            <div class="flex flex-col p-3 size-full bg-base-200 rounded">
+              <div class="flex-auto basis-1/12 text-xl font-semibold">
+                Currently only support previewing the first work sheet
+              </div>
+              <div id="preview-table-container" class="flex-auto basis-11/12 text-nowrap overflow-scroll"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </body>
 </html>

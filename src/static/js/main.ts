@@ -1,15 +1,14 @@
 import readFile from './lib/macros.ts' with {type: 'macro'};
-import {debounce, generateElements} from './lib/index.ts';
+import {debounce, generateElements, show_dialog, hide_dialog} from './lib/index.ts';
 import State from './lib/state.ts';
 import * as XLSX from 'xlsx';
-import loader, {type Monaco} from '@monaco-editor/loader';
+import loader from '@monaco-editor/loader';
 import { editor as EDITOR } from 'monaco-editor';
 
 const XLSX_TYPE_DEFINITION = readFile("./node_modules/xlsx/types/index.d.ts");
 const TEMPLATE = readFile("./src/static/js/templates.js");
-const CACHE_KEY_EDITOR_CONTENT = "EDITOR_CONTENT";
 
-var editor: EDITOR.IStandaloneCodeEditor;
+let editor: EDITOR.IStandaloneCodeEditor;
 
 function ready(fn: () => void) {
   if (document.readyState !== 'loading') {
@@ -25,7 +24,7 @@ function getPakoStringFromURL(): string | null {
 }
 
 function update_state_code() {
-  let code = editor.getValue();
+  const code = editor.getValue();
   if (window.ssp_state) {
     window.ssp_state.code = code;
     window.ssp_state.save_state();
@@ -39,15 +38,12 @@ const update_state_code_debounce = debounce(update_state_code, 1000);
 
 async function initialize_editor() {
   let code = TEMPLATE;
-  let url_code = window.ssp_state?.code;
-  if (url_code && url_code != '') {
-    code = url_code;
-  } else {
-    let cached_code = localStorage.getItem(CACHE_KEY_EDITOR_CONTENT);
-    if (cached_code && cached_code != '') code = cached_code;
+  const state_code = window.ssp_state?.code;
+  if (state_code && state_code != '') {
+    code = state_code;
   }
   
-  loader.init().then(monaco => {
+  await loader.init().then(monaco => {
     editor = monaco.editor.create(document.querySelector("#editor")!, {
       value: code,
       language: 'javascript',
@@ -55,45 +51,47 @@ async function initialize_editor() {
     });
 
     // make a container for those functions
-    var libSource = `
+    const libSource = `
     declare module XLSX { ${XLSX_TYPE_DEFINITION} };
     let workbook: XLSX.WorkBook = XLSX.WorkBook;
     let res_workbook: XLSX.WorkBook = XLSX.WorkBook;`; 
     // var libSource = XLSX_TYPE_DEFINITION.replace(/export /g, ""); // directly expose functions
     monaco.languages.typescript.javascriptDefaults.addExtraLib(libSource);
     
-    editor.onDidChangeModelContent(_e => {
+    editor.onDidChangeModelContent(() => {
       update_state_code_debounce();
     });
   });
 }
 
-async function render_preview_html_table() {
-  let preview_table_container = document.getElementById('preview-table-container')!;
-  const { decode_range } = XLSX.utils;
+function render_preview_html_table() {
+  const preview_table_container = document.getElementById('preview-table-container')!;
+  // const { decode_range } = XLSX.utils;
+  const decode_range = (...args: Parameters<typeof XLSX.utils.decode_range>) => XLSX.utils.decode_range(...args);
   const ws = window.workbook!.Sheets[window.workbook!.SheetNames[0]];
-  let data = ws["!data"];
+  const data = ws["!data"];
   if (data == null) return;
-  let raw_range = ws["!ref"];
+  const raw_range = ws["!ref"];
   if (raw_range == null) return;
-  let range = decode_range(raw_range);
+  const range = decode_range(raw_range);
   
-  let row_s = range.s.r;  let col_s = range.s.c;
-  let row_e = range.e.r;  let col_e = range.e.c;
+  const row_s = range.s.r;
+  const row_e = range.e.r;
   for (let row = row_s; row <= row_e; row ++) {
-    let content = data[row]?.map(cell => cell.w?.trim()).join(", ");
+    const content = data[row]?.map(cell => cell.w?.trim()).join(", ");
     preview_table_container.append(generateElements(`<p>${content}</p>`)[0]);
   }
 }
 
-async function initailize_xlsx() {
-  let drop_file_elem = document.getElementById("drop-file");
-  let input_file_elem = document.getElementById("input-file");
-  let indicator = document.getElementById("drop-file-indicator");
+function initailize_xlsx() {
+  const drop_file_elem = document.getElementById("drop-file");
+  const input_file_elem = document.getElementById("input-file");
+  const indicator = document.getElementById("drop-file-indicator");
 
-  async function handleDropAsync(e: any) {
+  async function handleDropAsync(e: DragEvent) {
     e.stopPropagation();
     e.preventDefault();
+    if (!e.dataTransfer) return;
     const file = e.dataTransfer.files[0];
     const data = await file.arrayBuffer();
     try {
@@ -106,8 +104,8 @@ async function initailize_xlsx() {
     render_preview_html_table();
   }
 
-  async function handleFileAsync(e: any) {
-    const file = e.target.files[0];
+  async function handleFileAsync(e: Event) {
+    const file = (e.target as HTMLInputElement).files![0];
     const data = await file.arrayBuffer();
     try {
       window.workbook = XLSX.read(data, { dense: true });
@@ -119,12 +117,12 @@ async function initailize_xlsx() {
     render_preview_html_table();
   }
 
-  drop_file_elem?.addEventListener("drop", handleDropAsync);
-  input_file_elem?.addEventListener("change", handleFileAsync);
+  drop_file_elem?.addEventListener("drop", e => {void handleDropAsync(e);});
+  input_file_elem?.addEventListener("change", e => {void handleFileAsync(e);});
 }
 
 function toggle_sheet_preview() {
-  let preview_panel_elm = document.getElementById("preview-panel")!;
+  const preview_panel_elm = document.getElementById("preview-panel")!;
   if (preview_panel_elm.classList.contains('hidden')) {
     preview_panel_elm.classList.remove('hidden')
   } else {
@@ -133,43 +131,62 @@ function toggle_sheet_preview() {
 }
 
 function export_sheet() {
-  if (!window.res_workbook) return;
+  if (!window.res_workbook) {
+    show_dialog("Err", "res_workbook is empty!");
+    return;
+  }
   XLSX.writeFile(window.res_workbook, "res_workbook.xlsx", { compression: true });
 }
 
 function process() {
-  let content = editor.getValue();
+  const content = editor.getValue();
   eval(content)
 }
 
 async function share() {
   if (!window.ssp_state) {
-    // TODO dialog 
+    show_dialog("Error", "window.ssp_state is not set!");
   } else {
     update_state_code();
-    let encoded_state = window.ssp_state.encode_pako();
-    let url = `${window.location.origin}${window.location.pathname}?pako=${encoded_state}`;
+    const encoded_state = window.ssp_state.encode_pako();
+    const url = `${window.location.origin}${window.location.pathname}?pako=${encoded_state}`;
     try {
       await navigator.clipboard.writeText(url);
-      // TODO dialog
-    } catch (error: any) {
-      console.error(error.message);
-      // TODO dialog
+      show_dialog("Copy Successfully", "The URL link is successfully copied to your clipboard!");
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error(error.message);
+        show_dialog("Error", `${error.message}`);
+      }
     }
   }
 }
 
-async function bind_button_events() {
-  let execute_btn = document.getElementById("btn-execute");
-  let preview_btn = document.getElementById("btn-preview");
-  let preview_panel_close_preview_btn = document.getElementById("preview-panel-close-preview-button");
-  let export_btn = document.getElementById("btn-export");
-  let share_btn = document.getElementById("btn-share");
+function reset() {
+  window.ssp_state = new State();
+  window.ssp_state.save_state();
+  const url = `${window.location.origin}${window.location.pathname}`;
+  window.open(url, '_self');
+}
+
+function bind_button_events() {
+  const dialog_close_btn = document.getElementById("dialog-close-btn");
+  dialog_close_btn?.addEventListener("click", hide_dialog);
+  
+  const execute_btn = document.getElementById("btn-execute");
+  const preview_btn = document.getElementById("btn-preview");
+  const preview_panel_close_preview_btn = document.getElementById("preview-panel-close-preview-button");
+  const export_btn = document.getElementById("btn-export");
+  const share_btn = document.getElementById("btn-share");
+  const reset_btn = document.getElementById("btn-reset");
+
+  
   execute_btn?.addEventListener("click", process);
   preview_btn?.addEventListener("click", toggle_sheet_preview);
   preview_panel_close_preview_btn?.addEventListener("click", toggle_sheet_preview);
   export_btn?.addEventListener("click", export_sheet);
-  share_btn?.addEventListener("click", share);
+  share_btn?.addEventListener("click", () => { void share(); });
+  reset_btn?.addEventListener("click", reset);
 }
 
 /**
@@ -181,7 +198,7 @@ function restore_state() {
   if (raw_state) {
     window.ssp_state = State.decode_pako(raw_state);
   } else {
-    let state = State.retrieve_state();
+    const state = State.retrieve_state();
     if (state) {
       window.ssp_state = state;
     } else {
@@ -199,7 +216,7 @@ function restore_state() {
     
     restore_state();
     initailize_xlsx();
-    initialize_editor();
+    void initialize_editor();
     bind_button_events();
   });
 })();
