@@ -27,7 +27,7 @@ class State {
     return null;
   }
 
-  encode_pako() {
+  encode_pako(): string {
     const json = JSON.stringify(this);
     const data = new TextEncoder().encode(json);
     const compressed = deflate(data, { level: 9 }); // zlib level 9

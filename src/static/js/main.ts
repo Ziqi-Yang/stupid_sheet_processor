@@ -24,8 +24,7 @@ function getPakoStringFromURL(): string | null {
   return urlParams.get('pako');
 }
 
-// sync editor content to cache (if too frequent (less than 1s), then do nothing)
-const update_state_code = debounce(() => {
+function update_state_code() {
   let code = editor.getValue();
   if (window.ssp_state) {
     window.ssp_state.code = code;
@@ -33,7 +32,10 @@ const update_state_code = debounce(() => {
   } else {
     console.error("Couldn't save state, since it is not initialized!");
   }
-}, 1000);
+}
+
+// sync editor content to cache (if too frequent (less than 1s), then do nothing)
+const update_state_code_debounce = debounce(update_state_code, 1000);
 
 async function initialize_editor() {
   let code = TEMPLATE;
@@ -61,7 +63,7 @@ async function initialize_editor() {
     monaco.languages.typescript.javascriptDefaults.addExtraLib(libSource);
     
     editor.onDidChangeModelContent(_e => {
-      update_state_code();
+      update_state_code_debounce();
     });
   });
 }
@@ -140,15 +142,34 @@ function process() {
   eval(content)
 }
 
+async function share() {
+  if (!window.ssp_state) {
+    // TODO dialog 
+  } else {
+    update_state_code();
+    let encoded_state = window.ssp_state.encode_pako();
+    let url = `${window.location.origin}${window.location.pathname}?pako=${encoded_state}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      // TODO dialog
+    } catch (error: any) {
+      console.error(error.message);
+      // TODO dialog
+    }
+  }
+}
+
 async function bind_button_events() {
   let execute_btn = document.getElementById("btn-execute");
   let preview_btn = document.getElementById("btn-preview");
   let preview_panel_close_preview_btn = document.getElementById("preview-panel-close-preview-button");
   let export_btn = document.getElementById("btn-export");
+  let share_btn = document.getElementById("btn-share");
   execute_btn?.addEventListener("click", process);
   preview_btn?.addEventListener("click", toggle_sheet_preview);
   preview_panel_close_preview_btn?.addEventListener("click", toggle_sheet_preview);
   export_btn?.addEventListener("click", export_sheet);
+  share_btn?.addEventListener("click", share);
 }
 
 /**
