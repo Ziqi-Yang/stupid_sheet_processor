@@ -1,5 +1,5 @@
 {
-  "name": "stupid excel processor",
+  "name": "stupid sheet processor",
   "private": true,
   "type": "module",
   "devDependencies": {

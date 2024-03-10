@@ -1,33 +1,57 @@
 <!doctype html>
 <html class="h-screen w-screen">
     <head>
-        <title>Stupid Excel Processor</title>
+        <title>Stupid Sheet Processor</title>
         <meta charset="utf-8" />
         <link rel="stylesheet" href="./static/css/main.css">
         <script type="module" src="./static/js/htmx.ts"></script>
         <script type="module" src="./static/js/main.ts"></script>
     </head>
     <body class="size-full">
-        <div class="navbar bg-base-200">
-            <div class="flex-1">
-	              <button hx-get="./home.html" class="btn btn-ghost text-2xl" role="tab" aria-label="Home">Stupid Excel Processor</button>
+        <div class="size-full flex flex-col">
+            <div class="navbar bg-base-200">
+                <div class="flex-1">
+	                  <button hx-get="./home.html" class="btn btn-ghost text-2xl" role="tab" aria-label="Home">Stupid Sheet Processor</button>
+                </div>
             </div>
-        </div>
 
-        <div role="tabpanel" class="p-2 size-full">
-            <div id="main" class="flex flex-col size-full">
-                <div class="flex-auto basis-1/4">
-                    <div id="drop_file" class="relative size-full p-1 border-2 border-dashed rounded">
-                        <div class="absolute text-2xl left-1/2 top-1/2 translate-x-[-50%] translate-y-[-50%]">Drop file here</div>
-                        <input id="input_file" type="file" class="absolute size-full opacity-0 cursor-pointer" />
+            <div role="tabpanel" class="p-2 size-full">
+                <div id="main" class="flex size-full gap-2">
+                    <div class="flex-auto basis-5/6">
+                        <div id="editor" class="size-full"></div>
+                    </div>
+                    <div class="flex-auto basis-1/6 flex flex-col gap-1">
+                        <div id="drop_preview" class="size-full p-1 border-2 border-dashed rounded flex-auto basis-1/4">
+                            <div id="drop-file" class="relative size-full">
+                                <div id="drop-file-indicator" class="absolute text-wrap truncate text-sm absolute-center">Drop file here</div>
+                                <input id="input-file" type="file" class="absolute size-full opacity-0 cursor-pointer" />
+                            </div>
+                        </div>
+                        <div class="flex-auto basis-3/4 flex flex-wrap gap-1">
+                            <button id="btn-execute" class="flex-initial basis-4 btn btn-sm btn-outline rounded">Execute</button>
+                            <button id="btn-preview" class="flex-initial basis-4 btn btn-sm btn-outline rounded">Preview</button>
+                            <button id="btn-export" class="flex-initial basis-4 btn btn-sm btn-outline rounded">Export</button>
+                        </div>
                     </div>
                 </div>
-                <div class="flex-1 flex flex-row-reverse my-2">
-                    <button id="btn-execute" class="flex-auto btn btn-sm btn-outline rounded">Execute</button>
+            </div>
+        </div>
+        <div id="preview-panel" class="hidden fixed z-10 size-full backdrop-blur top-0 left-0 right-0">
+            <div class="flex flex-col size-full">
+                <div class="flex-auto basis-1/12 flex flex-row-reverse p-2">
+                    <button id="preview-panel-close-preview-button" class="btn btn-sm btn-outline rounded">Close</button>
                 </div>
-                <div class="flex-auto basis-3/4">
-                    <div id="editor" class="size-full"></div>
+                <div class="flex-auto basis-11/12 relative">
+                    <div class="absolute p-3  size-full absolute-center rounded">
+                        <div class="flex flex-col p-3 size-full bg-base-200 rounded">
+                            <div class="flex-auto basis-1/12 text-xl font-semibold">
+                                Only preview the first work sheet
+                            </div>
+                            <div id="preview-table-container" class="flex-auto basis-11/12 text-nowrap overflow-scroll"></div>
+                        </div>
+                    </div>
                 </div>
+            </div>
             </div>
         </div>
     </body>

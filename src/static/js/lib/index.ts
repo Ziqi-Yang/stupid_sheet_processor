@@ -12,3 +12,9 @@ export function debounce(func: Function, wait: number) {
   };
 }
 
+export function generateElements(html: string) {
+  const template = document.createElement('template');
+  template.innerHTML = html.trim();
+  return template.content.children;
+}
+
