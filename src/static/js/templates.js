@@ -24,6 +24,6 @@
     }
 
     res_workbook = workbook; // then click on `export` button
-    // or you can use the following expression to directly down the result worksheet
+    // or you can use the following expression to directly download the result worksheet
     // XLSX.writeFile(window.res_workbook, "res_workbook.xlsx", { compression: true });
 })();
